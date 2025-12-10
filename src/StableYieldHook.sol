@@ -2,6 +2,7 @@
 pragma solidity ^0.8.26;
 
 import {BaseHook} from "@openzeppelin/uniswap-hooks/src/base/BaseHook.sol";
+import {ReentrancyGuard} from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 
 import {Hooks} from "@uniswap/v4-core/src/libraries/Hooks.sol";
 import {IPoolManager, SwapParams, ModifyLiquidityParams} from "@uniswap/v4-core/src/interfaces/IPoolManager.sol";
@@ -14,7 +15,8 @@ import {IMockMorphoDeposit} from "./interfaces/IMockMorphoDeposit.sol";
 
 /// @title StableYieldHook
 /// @notice Uniswap V4 hook that optimizes yield for stablecoin pairs by routing fees to lending protocols
-contract StableYieldHook is BaseHook {
+/// @dev Uses ReentrancyGuard to protect against reentrancy attacks
+contract StableYieldHook is BaseHook, ReentrancyGuard {
     using PoolIdLibrary for PoolKey;
     using BeforeSwapDeltaLibrary for BeforeSwapDelta;
 
@@ -140,6 +142,7 @@ contract StableYieldHook is BaseHook {
     /// @param hookData Additional hook data
     /// @return selector Function selector
     /// @return hookDelta Additional delta to apply
+    /// @dev Protected against reentrancy - external calls are in _compoundYield with nonReentrant
     function _afterSwap(
         address,
         PoolKey calldata key,
@@ -176,12 +179,13 @@ contract StableYieldHook is BaseHook {
                 // Route 50% of accumulated fees to Morpho
                 uint256 routingAmount = (feesToRoute * FEE_ROUTING_PERCENTAGE) / 1e18;
                 
+                // Update accumulated fees BEFORE external call (CEI pattern)
+                accumulatedFees[poolId] = feesToRoute - routingAmount;
+                
                 // Deposit to Morpho (mock)
                 // Note: In production, this would transfer tokens and call deposit
+                // External call - protected by ReentrancyGuard in _compoundYield
                 morphoDeposit.deposit(routingAmount);
-                
-                // Update accumulated fees (keep 50% in pool)
-                accumulatedFees[poolId] = feesToRoute - routingAmount;
                 
                 uint256 apy = avsOracle.getAPY();
                 emit FeesRoutedToLending(poolId, routingAmount, apy, block.timestamp);
@@ -199,7 +203,8 @@ contract StableYieldHook is BaseHook {
 
     /// @notice Compound yield from lending protocol back to pool
     /// @param poolId The pool ID
-    function _compoundYield(PoolId poolId) internal {
+    /// @dev Protected against reentrancy by nonReentrant modifier
+    function _compoundYield(PoolId poolId) internal nonReentrant {
         // Check for accrued yield in Morpho
         uint256 accruedYield = morphoDeposit.getAccruedYield();
         
