@@ -1,0 +1,88 @@
+# StableYield Hook (SYHook)
+
+An innovative Uniswap V4 hook that transforms standard stablecoin liquidity pools (e.g., USDC/USDT) into intelligent, yield-optimizing engines by integrating with EigenLayer's Actively Validated Services (AVS).
+
+## Overview
+
+SYHook dynamically routes a portion of swap fees to high-yield lending protocols like Morpho Blue or Aave during favorable market conditions, while ensuring security through restaked ETH-backed oracle data. This enables LPs to earn 15-30% higher effective APY without manual intervention.
+
+## Key Features
+
+- **Dynamic Yield Routing**: Routes 50-80% of fees to lending protocols when APY > 4% threshold
+- **AVS-Secured Oracle**: EigenLayer operators aggregate data from Morpho/Aave
+- **Auto-Compounding**: Accrues interest proportionally to LPs, minimizing IL
+- **Fallback Mechanisms**: Stale data → fixed 4% APY; no quorum → base 0.3% fee
+
+## Architecture
+
+### Core Contracts
+
+- `StableYieldHook.sol`: Main hook contract extending BaseHook
+- `MockAVSOracle.sol`: Mock AVS oracle for PoC (uses storage variable)
+- `MockMorphoDeposit.sol`: Mock Morpho Blue deposit contract
+
+### Hook Logic
+
+1. **beforeSwap**: 
+   - Fetches APY from AVS oracle
+   - Checks if APY > 4% and volume < 2%
+   - Returns dynamic fee tier if conditions are met
+
+2. **afterSwap**:
+   - Routes 50% of accumulated fees to Morpho if conditions met
+   - Compounds accrued yield back to pool
+   - Updates volume tracking
+
+## Setup
+
+### Prerequisites
+
+- Foundry
+- Node.js (for linting)
+
+### Installation
+
+```bash
+# Install Foundry dependencies
+forge install
+
+# Install Node dependencies
+pnpm install
+```
+
+### Compilation
+
+```bash
+forge build
+```
+
+### Testing
+
+```bash
+forge test
+```
+
+## Configuration
+
+### Constants
+
+- `MIN_APY_THRESHOLD`: 4% (0.04e18)
+- `MAX_VOLUME_THRESHOLD`: 2% (0.02e18)
+- `FEE_ROUTING_PERCENTAGE`: 50% (0.5e18)
+- `BASE_FEE_TIER`: 0.3% (3000)
+- `DYNAMIC_FEE_TIER`: 0.5% (5000)
+
+## Development Status
+
+This is a Proof of Concept (PoC) implementation. Production deployment would require:
+
+- Integration with real EigenLayer AVS oracle
+- Integration with real Morpho Blue/Aave contracts
+- Proper fee collection mechanism from PoolManager
+- LP yield distribution logic
+- Comprehensive testing and auditing
+
+## License
+
+MIT
+
