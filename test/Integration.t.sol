@@ -1,16 +1,20 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.19;
+pragma solidity ^0.8.26;
 
 import {Test, console} from "forge-std/Test.sol";
-import {StableYieldHook} from "../contracts/StableYieldHook.sol";
-import {MockAVSOracle} from "../contracts/mocks/MockAVSOracle.sol";
-import {MockMorphoDeposit} from "../contracts/mocks/MockMorphoDeposit.sol";
-import {IPoolManager} from "v4-core/interfaces/IPoolManager.sol";
-import {PoolKey} from "v4-core/types/PoolKey.sol";
-import {PoolId, PoolIdLibrary} from "v4-core/types/PoolId.sol";
-import {BalanceDelta} from "v4-core/types/BalanceDelta.sol";
-import {Currency} from "v4-core/types/Currency.sol";
-import {SwapParams} from "v4-core/types/PoolOperation.sol";
+import {BaseTest} from "./utils/BaseTest.sol";
+import {IHooks} from "@uniswap/v4-core/src/interfaces/IHooks.sol";
+import {Hooks} from "@uniswap/v4-core/src/libraries/Hooks.sol";
+import {Constants} from "@uniswap/v4-core/test/utils/Constants.sol";
+import {StableYieldHook} from "../src/StableYieldHook.sol";
+import {MockAVSOracle} from "../src/mocks/MockAVSOracle.sol";
+import {MockMorphoDeposit} from "../src/mocks/MockMorphoDeposit.sol";
+import {IPoolManager} from "@uniswap/v4-core/src/interfaces/IPoolManager.sol";
+import {PoolKey} from "@uniswap/v4-core/src/types/PoolKey.sol";
+import {PoolId, PoolIdLibrary} from "@uniswap/v4-core/src/types/PoolId.sol";
+import {BalanceDelta} from "@uniswap/v4-core/src/types/BalanceDelta.sol";
+import {Currency} from "@uniswap/v4-core/src/types/Currency.sol";
+import {SwapParams, ModifyLiquidityParams} from "@uniswap/v4-core/src/types/PoolOperation.sol";
 
 /// @title MockPoolManager for integration tests
 contract MockPoolManagerIntegration is IPoolManager {
@@ -29,7 +33,7 @@ contract MockPoolManagerIntegration is IPoolManager {
 
     function modifyLiquidity(
         PoolKey memory,
-        IPoolManager.ModifyLiquidityParams memory,
+        ModifyLiquidityParams memory,
         bytes calldata
     ) external pure override returns (BalanceDelta, BalanceDelta) {
         return (BalanceDelta.wrap(0), BalanceDelta.wrap(0));
@@ -138,11 +142,10 @@ contract MockPoolManagerIntegration is IPoolManager {
 
 /// @title IntegrationTest
 /// @notice Integration tests simulating full swap flow
-contract IntegrationTest is Test {
+contract IntegrationTest is BaseTest {
     using PoolIdLibrary for PoolKey;
 
     StableYieldHook public hook;
-    MockPoolManagerIntegration public poolManager;
     MockAVSOracle public avsOracle;
     MockMorphoDeposit public morphoDeposit;
 
@@ -152,24 +155,27 @@ contract IntegrationTest is Test {
     uint256 public constant POOL_LIQUIDITY = 10_000_000e18; // 10M tokens
 
     function setUp() public {
-        poolManager = new MockPoolManagerIntegration();
+        // Deploy all required artifacts
+        deployArtifactsAndLabel();
+
+        (Currency currency0, Currency currency1) = deployCurrencyPair();
+
+        // Deploy mock contracts
         avsOracle = new MockAVSOracle();
         morphoDeposit = new MockMorphoDeposit();
 
-        hook = new StableYieldHook(
-            IPoolManager(address(poolManager)),
-            avsOracle,
-            morphoDeposit
+        // Deploy the hook to an address with the correct flags
+        address flags = address(
+            uint160(
+                Hooks.BEFORE_SWAP_FLAG | Hooks.AFTER_SWAP_FLAG
+            ) ^ (0x4444 << 144) // Namespace the hook to avoid collisions
         );
+        bytes memory constructorArgs = abi.encode(poolManager, avsOracle, morphoDeposit);
+        deployCodeTo("StableYieldHook.sol:StableYieldHook", constructorArgs, flags);
+        hook = StableYieldHook(flags);
 
-        poolKey = PoolKey({
-            currency0: Currency.wrap(address(0x1)),
-            currency1: Currency.wrap(address(0x2)),
-            fee: 3000,
-            tickSpacing: 60,
-            hooks: StableYieldHook(address(hook))
-        });
-
+        // Create the pool
+        poolKey = PoolKey(currency0, currency1, 3000, 60, IHooks(hook));
         poolId = poolKey.toId();
 
         vm.prank(address(poolManager));

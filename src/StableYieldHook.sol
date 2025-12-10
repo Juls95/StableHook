@@ -1,15 +1,14 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.19;
+pragma solidity ^0.8.26;
 
-import {BaseHook} from "v4-periphery/utils/BaseHook.sol";
-import {IHooks} from "v4-core/interfaces/IHooks.sol";
-import {IPoolManager} from "v4-core/interfaces/IPoolManager.sol";
-import {Hooks} from "v4-core/libraries/Hooks.sol";
-import {PoolId, PoolIdLibrary} from "v4-core/types/PoolId.sol";
-import {PoolKey} from "v4-core/types/PoolKey.sol";
-import {BalanceDelta} from "v4-core/types/BalanceDelta.sol";
-import {BeforeSwapDelta, BeforeSwapDeltaLibrary} from "v4-core/types/BeforeSwapDelta.sol";
-import {SwapParams} from "v4-core/types/PoolOperation.sol";
+import {BaseHook} from "@openzeppelin/uniswap-hooks/src/base/BaseHook.sol";
+
+import {Hooks} from "@uniswap/v4-core/src/libraries/Hooks.sol";
+import {IPoolManager, SwapParams, ModifyLiquidityParams} from "@uniswap/v4-core/src/interfaces/IPoolManager.sol";
+import {PoolKey} from "@uniswap/v4-core/src/types/PoolKey.sol";
+import {PoolId, PoolIdLibrary} from "@uniswap/v4-core/src/types/PoolId.sol";
+import {BalanceDelta} from "@uniswap/v4-core/src/types/BalanceDelta.sol";
+import {BeforeSwapDelta, BeforeSwapDeltaLibrary} from "@uniswap/v4-core/src/types/BeforeSwapDelta.sol";
 import {IMockAVSOracle} from "./interfaces/IMockAVSOracle.sol";
 import {IMockMorphoDeposit} from "./interfaces/IMockMorphoDeposit.sol";
 
@@ -131,7 +130,7 @@ contract StableYieldHook is BaseHook {
         // Higher fee tier when yield routing is active
         uint24 feeTier = shouldRouteFees ? DYNAMIC_FEE_TIER : BASE_FEE_TIER;
         
-        return (IHooks.beforeSwap.selector, BeforeSwapDelta.wrap(0), feeTier);
+        return (BaseHook.beforeSwap.selector, BeforeSwapDeltaLibrary.ZERO_DELTA, feeTier);
     }
 
     /// @notice Called after each swap to compound yield and route fees
@@ -195,7 +194,7 @@ contract StableYieldHook is BaseHook {
         // Clear cache
         shouldRouteFeesCache[poolId] = false;
         
-        return (IHooks.afterSwap.selector, 0);
+        return (BaseHook.afterSwap.selector, 0);
     }
 
     /// @notice Compound yield from lending protocol back to pool

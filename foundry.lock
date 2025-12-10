@@ -1,12 +1,18 @@
 {
-  "lib/v4-periphery": {
-    "rev": "3779387e5d296f39df543d23524b050f89a62917"
+  "lib/uniswap-hooks": {
+    "tag": {
+      "name": "v1.2.1",
+      "rev": "acbd604c409a827f7f98c9517236da860c4fca1a"
+    }
   },
   "lib/forge-std": {
     "tag": {
       "name": "v1.12.0",
       "rev": "7117c90c8cf6c68e5acce4f09a6b24715cea4de6"
     }
+  },
+  "lib/v4-periphery": {
+    "rev": "3779387e5d296f39df543d23524b050f89a62917"
   },
   "lib/v4-core": {
     "tag": {
