@@ -1,13 +1,15 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.26;
+pragma solidity ^0.8.19;
 
-import {BaseHook} from "v4-periphery/BaseHook.sol";
-import {IPoolManager} from "v4-core/src/interfaces/IPoolManager.sol";
-import {Hooks} from "v4-core/src/libraries/Hooks.sol";
-import {PoolId, PoolIdLibrary} from "v4-core/src/types/PoolId.sol";
-import {PoolKey} from "v4-core/src/types/PoolKey.sol";
-import {BalanceDelta} from "v4-core/src/types/BalanceDelta.sol";
-import {BeforeSwapDelta, BeforeSwapDeltaLibrary} from "v4-core/src/callback/BeforeSwapDelta.sol";
+import {BaseHook} from "v4-periphery/utils/BaseHook.sol";
+import {IHooks} from "v4-core/interfaces/IHooks.sol";
+import {IPoolManager} from "v4-core/interfaces/IPoolManager.sol";
+import {Hooks} from "v4-core/libraries/Hooks.sol";
+import {PoolId, PoolIdLibrary} from "v4-core/types/PoolId.sol";
+import {PoolKey} from "v4-core/types/PoolKey.sol";
+import {BalanceDelta} from "v4-core/types/BalanceDelta.sol";
+import {BeforeSwapDelta, BeforeSwapDeltaLibrary} from "v4-core/types/BeforeSwapDelta.sol";
+import {SwapParams} from "v4-core/types/PoolOperation.sol";
 import {IMockAVSOracle} from "./interfaces/IMockAVSOracle.sol";
 import {IMockMorphoDeposit} from "./interfaces/IMockMorphoDeposit.sol";
 
@@ -104,12 +106,12 @@ contract StableYieldHook is BaseHook {
     /// @return selector Function selector
     /// @return delta The before swap delta (fee adjustment)
     /// @return feeTier The fee tier to use for this swap
-    function beforeSwap(
+    function _beforeSwap(
         address,
         PoolKey calldata key,
-        IPoolManager.SwapParams calldata swapParams,
+        SwapParams calldata swapParams,
         bytes calldata hookData
-    ) external override returns (bytes4, BeforeSwapDelta, uint24) {
+    ) internal override returns (bytes4, BeforeSwapDelta, uint24) {
         PoolId poolId = key.toId();
         
         // Fetch APY from AVS oracle
@@ -129,7 +131,7 @@ contract StableYieldHook is BaseHook {
         // Higher fee tier when yield routing is active
         uint24 feeTier = shouldRouteFees ? DYNAMIC_FEE_TIER : BASE_FEE_TIER;
         
-        return (this.beforeSwap.selector, BeforeSwapDelta.wrap(0), feeTier);
+        return (IHooks.beforeSwap.selector, BeforeSwapDelta.wrap(0), feeTier);
     }
 
     /// @notice Called after each swap to compound yield and route fees
@@ -139,13 +141,13 @@ contract StableYieldHook is BaseHook {
     /// @param hookData Additional hook data
     /// @return selector Function selector
     /// @return hookDelta Additional delta to apply
-    function afterSwap(
+    function _afterSwap(
         address,
         PoolKey calldata key,
-        IPoolManager.SwapParams calldata swapParams,
+        SwapParams calldata swapParams,
         BalanceDelta delta,
         bytes calldata hookData
-    ) external override returns (bytes4, int128) {
+    ) internal override returns (bytes4, int128) {
         PoolId poolId = key.toId();
         
         // Update volume tracking
@@ -193,7 +195,7 @@ contract StableYieldHook is BaseHook {
         // Clear cache
         shouldRouteFeesCache[poolId] = false;
         
-        return (this.afterSwap.selector, 0);
+        return (IHooks.afterSwap.selector, 0);
     }
 
     /// @notice Compound yield from lending protocol back to pool

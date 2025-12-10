@@ -58,9 +58,36 @@ forge build
 
 ### Testing
 
+First, install the required dependencies:
+
 ```bash
-forge test
+# Install Uniswap V4 core
+forge install Uniswap/v4-core --no-commit
+
+# Install Uniswap V4 periphery  
+forge install Uniswap/v4-periphery --no-commit
+
+# Install forge-std for testing utilities
+forge install foundry-rs/forge-std --no-commit
 ```
+
+Then run the tests:
+
+```bash
+# Run all tests
+forge test
+
+# Run with verbose output
+forge test -vvv
+
+# Run specific test file
+forge test --match-path test/StableYieldHook.t.sol
+
+# Run with gas reporting
+forge test --gas-report
+```
+
+See `test/README.md` for detailed testing documentation.
 
 ## Configuration
 
