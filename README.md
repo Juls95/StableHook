@@ -58,6 +58,27 @@ forge build
 
 ### Testing
 
+### Quick Start
+
+Run all tests:
+```bash
+forge test
+```
+
+Run E2E tests specifically:
+```bash
+forge test --match-path test/SYHookE2E.t.sol
+```
+
+Run on Sepolia fork:
+```bash
+forge test --match-path test/SYHookE2E.t.sol --fork-url $SEPOLIA_RPC_URL
+```
+
+See [test/E2E_TESTING.md](test/E2E_TESTING.md) for detailed E2E testing guide.
+
+### Unit & Integration Tests
+
 First, install the required dependencies:
 
 ```bash
