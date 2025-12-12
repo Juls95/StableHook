@@ -6,6 +6,22 @@ export default defineConfig({
   server: {
     port: 3000,
     open: true
+  },
+  build: {
+    outDir: 'dist',
+    sourcemap: false,
+    minify: 'esbuild',
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          'react-vendor': ['react', 'react-dom'],
+          'wagmi-vendor': ['wagmi', 'viem', '@tanstack/react-query']
+        }
+      }
+    }
+  },
+  preview: {
+    port: 3000
   }
 })
 

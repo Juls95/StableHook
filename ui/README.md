@@ -31,21 +31,58 @@ npm install
 npm run dev
 ```
 
-## Deployment
+## Deployment to Vercel
 
-### Vercel
+### Quick Deploy (Recommended)
 
 ```bash
+# Option 1: Use the deployment script
+./deploy.sh
+
+# Option 2: Use Vercel CLI directly
 npm install -g vercel
-vercel
+vercel --prod
 ```
 
-### Netlify
+### Step-by-Step Deployment
 
-```bash
-npm run build
-# Deploy the 'dist' folder to Netlify
-```
+1. **Install Vercel CLI** (if not already installed):
+   ```bash
+   npm install -g vercel
+   ```
+
+2. **Login to Vercel**:
+   ```bash
+   vercel login
+   ```
+
+3. **Deploy**:
+   ```bash
+   # First deployment (preview)
+   vercel
+   
+   # Production deployment
+   vercel --prod
+   ```
+
+### Deploy via Vercel Dashboard
+
+1. Push your code to GitHub/GitLab/Bitbucket
+2. Go to [vercel.com/dashboard](https://vercel.com/dashboard)
+3. Click **"Add New..."** → **"Project"**
+4. Import your repository
+5. Configure:
+   - **Framework Preset**: Vite
+   - **Root Directory**: `ui` (if repo root is parent directory)
+   - **Build Command**: `npm run build`
+   - **Output Directory**: `dist`
+6. Click **"Deploy"**
+
+### Configuration
+
+The UI is pre-configured with `vercel.json` for optimal deployment. The app runs in **simulation mode** by default, so no blockchain connection is required.
+
+For detailed deployment instructions, see [DEPLOY.md](./DEPLOY.md).
 
 ## Environment Variables
 
