@@ -1,7 +1,29 @@
 # StableYield Hook (SYHook)
 
 An innovative Uniswap V4 hook that transforms standard stablecoin liquidity pools (e.g., USDC/USDT) into intelligent, yield-optimizing engines by integrating with EigenLayer's Actively Validated Services (AVS).
+┌─────────────────────┐          ┌──────────────────────┐           ┌────────────────────┐
+│     Trader / dApp   │  Swap    │   Uniswap V4 Core     │          │   EigenLayer AVS   │
+│  (wagmi / Frontend) │ ──────►  │   PoolManager.sol     │◄───────► │   YieldOracle AVS  │
+└─────────────────────┘          │  ↳ Calls SYHook.sol  │   (1)     │ (Off-chain Operators│
+                                 └─────────▲────────────┘           │  compute live APY) │
+                                            │                       └─────────▲──────────┘
+                                            │                                 │
+                                  ┌─────────┴────────────┐                    │ Signed & Aggregated
+                                  │   SYHook.sol         │                    │   APY Data
+                                  │ (beforeSwap / afterSwap)                  │
+                                  │   • Fetches APY from AVS                  │
+                                  │   • Decides allocation %                  │
+                                  │   • Routes fees → Morpho/Aave mock        │
+                                  └─────────▲────────────┘                    │   
+                                            │                                 │
+                                  ┌─────────┴────────────┐    ┌───────────────┴──────┐
+                                  │   MockLendingVault   │    │   YieldOracle.sol    │
+                                  │   (simulates Morpho) │    │   (AVS Consumer)     │
+                                  │   • deposit()        │    │   • verifyQuorum()   │
+                                  │   • accrueInterest() │    │   • latestAPY()      │
+                                  └──────────────────────┘    └──────────────────────┘
 
+After swap → Fees auto-compounded back to LP positions via PoolManager
 ## Overview
 
 SYHook dynamically routes a portion of swap fees to high-yield lending protocols like Morpho Blue or Aave during favorable market conditions, while ensuring security through restaked ETH-backed oracle data. This enables LPs to earn 15-30% higher effective APY without manual intervention.
