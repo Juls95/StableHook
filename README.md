@@ -1,27 +1,8 @@
 # StableYield Hook (SYHook)
 
 An innovative Uniswap V4 hook that transforms standard stablecoin liquidity pools (e.g., USDC/USDT) into intelligent, yield-optimizing engines by integrating with EigenLayer's Actively Validated Services (AVS).
-┌─────────────────────┐          ┌──────────────────────┐           ┌────────────────────┐
-│     Trader / dApp   │  Swap    │   Uniswap V4 Core     │          │   EigenLayer AVS   │
-│  (wagmi / Frontend) │ ──────►  │   PoolManager.sol     │◄───────► │   YieldOracle AVS  │
-└─────────────────────┘          │  ↳ Calls SYHook.sol  │   (1)     │ (Off-chain Operators│
-                                 └─────────▲────────────┘           │  compute live APY) │
-                                            │                       └─────────▲──────────┘
-                                            │                                 │
-                                  ┌─────────┴────────────┐                    │ Signed & Aggregated
-                                  │   SYHook.sol         │                    │   APY Data
-                                  │ (beforeSwap / afterSwap)                  │
-                                  │   • Fetches APY from AVS                  │
-                                  │   • Decides allocation %                  │
-                                  │   • Routes fees → Morpho/Aave mock        │
-                                  └─────────▲────────────┘                    │   
-                                            │                                 │
-                                  ┌─────────┴────────────┐    ┌───────────────┴──────┐
-                                  │   MockLendingVault   │    │   YieldOracle.sol    │
-                                  │   (simulates Morpho) │    │   (AVS Consumer)     │
-                                  │   • deposit()        │    │   • verifyQuorum()   │
-                                  │   • accrueInterest() │    │   • latestAPY()      │
-                                  └──────────────────────┘    └──────────────────────┘
+<img width="726" height="421" alt="image" src="https://github.com/user-attachments/assets/25b2d79c-29a8-4d46-9320-8c1a0b85e09c" />
+
 
 After swap → Fees auto-compounded back to LP positions via PoolManager
 ## Overview
